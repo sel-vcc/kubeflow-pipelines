@@ -10,7 +10,8 @@ description: |
     model (google.VertexModel):
       Vertex model resource that will be the parent resource of the uploaded evaluation.
     problem_type (str):
-      GCS link to the schema URI for model evaluation metrics.
+      The problem type of the metrics being imported to the VertexModel.
+        `classification`, `regression`, and `forecasting` are the currently supported problem types.
 inputs:
   - {name: metrics, type: Metrics}
   - {name: explanation, type: Metrics, optional: True}

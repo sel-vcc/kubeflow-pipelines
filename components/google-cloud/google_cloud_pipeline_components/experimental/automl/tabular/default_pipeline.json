@@ -775,6 +775,49 @@
                 "name": "automl-tabular-transform"
               }
             },
+            "import-model-evaluation": {
+              "cachingOptions": {
+                "enableCache": true
+              },
+              "componentRef": {
+                "name": "comp-import-model-evaluation"
+              },
+              "dependentTasks": [
+                "model-evaluation",
+                "model-evaluation-2",
+                "model-upload"
+              ],
+              "inputs": {
+                "artifacts": {
+                  "explanation": {
+                    "taskOutputArtifact": {
+                      "outputArtifactKey": "evaluation_metrics",
+                      "producerTask": "model-evaluation-2"
+                    }
+                  },
+                  "metrics": {
+                    "taskOutputArtifact": {
+                      "outputArtifactKey": "evaluation_metrics",
+                      "producerTask": "model-evaluation"
+                    }
+                  },
+                  "model": {
+                    "taskOutputArtifact": {
+                      "outputArtifactKey": "model",
+                      "producerTask": "model-upload"
+                    }
+                  }
+                },
+                "parameters": {
+                  "problem_type": {
+                    "componentInputParameter": "pipelineparam--prediction_type"
+                  }
+                }
+              },
+              "taskInfo": {
+                "name": "import-model-evaluation"
+              }
+            },
             "merge-materialized-splits": {
               "cachingOptions": {
                 "enableCache": true
@@ -1763,6 +1806,36 @@
           }
         }
       },
+      "comp-import-model-evaluation": {
+        "executorLabel": "exec-import-model-evaluation",
+        "inputDefinitions": {
+          "artifacts": {
+            "explanation": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "metrics": {
+              "artifactType": {
+                "schemaTitle": "system.Metrics",
+                "schemaVersion": "0.0.1"
+              }
+            },
+            "model": {
+              "artifactType": {
+                "schemaTitle": "google.VertexModel",
+                "schemaVersion": "0.0.1"
+              }
+            }
+          },
+          "parameters": {
+            "problem_type": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
       "comp-merge-materialized-splits": {
         "executorLabel": "exec-merge-materialized-splits",
         "inputDefinitions": {
@@ -2521,6 +2594,27 @@
               "-u",
               "-m",
               "google_cloud_pipeline_components.container.v1.gcp_launcher.launcher"
+            ],
+            "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.4"
+          }
+        },
+        "exec-import-model-evaluation": {
+          "container": {
+            "args": [
+              "--metrics",
+              "{{$.inputs.artifacts['metrics'].path}}",
+              "--explanation",
+              "{{$.inputs.artifacts['explanation'].metadata['explanation_gcs_path']}}",
+              "--problem_type",
+              "{{$.inputs.parameters['problem_type']}}",
+              "--model_name",
+              "{{$.inputs.artifacts['model'].metadata['resourceName']}}"
+            ],
+            "command": [
+              "python3",
+              "-u",
+              "-m",
+              "google_cloud_pipeline_components.container.experimental.evaluation.import_model_evaluation"
             ],
             "image": "gcr.io/ml-pipeline/google-cloud-pipeline-components:1.0.4"
           }
