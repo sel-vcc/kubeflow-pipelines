@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -32,8 +33,7 @@ const (
 )
 
 const (
-	MutateAPI   string = "/mutate"
-	WebhookPort string = ":8443"
+	MutateAPI string = "/mutate"
 )
 
 const (
@@ -60,6 +60,7 @@ type WhSvrDBParameters struct {
 func main() {
 	var params WhSvrDBParameters
 	var clientParams util.ClientParameters
+	var port int
 	flag.StringVar(&params.dbDriver, "db_driver", mysqlDBDriverDefault, "Database driver name, mysql is the default value")
 	flag.StringVar(&params.dbHost, "db_host", mysqlDBHostDefault, "Database host name.")
 	flag.StringVar(&params.dbPort, "db_port", mysqlDBPortDefault, "Database port number.")
@@ -73,6 +74,7 @@ func main() {
 	// k8s.io/client-go/rest/config.go#RESTClientFor
 	flag.Float64Var(&clientParams.QPS, "kube_client_qps", 5, "The maximum QPS to the master from this client.")
 	flag.IntVar(&clientParams.Burst, "kube_client_burst", 10, "Maximum burst for throttle from this client.")
+	flag.IntVar(&port, "listen_port", 8443, "Port on which the server listens.")
 
 	flag.Parse()
 
@@ -87,9 +89,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle(MutateAPI, server.AdmitFuncHandler(server.MutatePodIfCached, &clientManager))
 	server := &http.Server{
-		// We listen on port 8443 such that we do not need root privileges or extra capabilities for this server.
-		// The Service object will take care of mapping this port to the HTTPS port 443.
-		Addr:    WebhookPort,
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
 	log.Fatal(server.ListenAndServeTLS(certPath, keyPath))
